@@ -18,9 +18,11 @@ theme_set(theme_bw())
 climas = read_csv(here::here("data/clima_cg_jp-semanal.csv"), 
                   col_types = "cTdddddd")
 
-glimpse(climas)
-```
+# Selecionando somente as semanas onde há leitura nas duas cidades
+semanas = climas %>% count(semana) %>% filter(n == 2) %>% pull(semana)
+preprocessed_climas = climas %>% filter(semana %in% semanas)
 
+```
 ## Temperatura
 
 ### Onde é mais quente?
