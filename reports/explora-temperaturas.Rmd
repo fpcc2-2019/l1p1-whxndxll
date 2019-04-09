@@ -22,6 +22,7 @@ climas = read_csv(here::here("data/clima_cg_jp-semanal.csv"),
 semanas = climas %>% count(semana) %>% filter(n == 2) %>% pull(semana)
 preprocessed_climas = climas %>% filter(semana %in% semanas)
 
+preprocessed_climas  %>% group_by(cidade, ano) %>% mutate(media_anual = mean(tmedia))
 ```
 ## Temperatura
 
