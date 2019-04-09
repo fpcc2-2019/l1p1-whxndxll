@@ -1,0 +1,45 @@
+---
+title: "Exemplo com star wars"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the **Run** button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+glimpse(starwars)
+```
+
+```{r}
+filter(filter(starwars, is.na(height)), is.na(birth_year))
+
+# Primitivas
+# filter - seleciona linhas
+# mutate - cria colunas
+# summarise
+# arrange 
+# select
+# group_by
+
+# SELECT v1, v2, v3 FROM starwars WHERE v1 = 'Human'
+starwars %>% 
+    select(v2, v2, v3) %>% 
+    filter(v1 == "Human")
+
+
+starwars %>%
+    filter(!is.na(height),
+           !is.na(mass)) %>%
+    filter(species %in% c("Human", "Droid")) %>%
+    mutate(imc = mass / ((height / 100) ** 2)) %>% 
+    group_by(species) %>% 
+    summarise(imc_medio = mean(imc), imc_maximo = max(imc)) %>% 
+    ggplot(mapping = aes(x = species, y = imc_medio)) + 
+    geom_col()
+```
+
