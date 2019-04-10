@@ -2,28 +2,47 @@
 title: "Temperatura JP x CG"
 output:
     html_document:
+        code_folding: hide
     df_print: paged
 theme: sandstone
 ---
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r label= Imports, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(here)
 library(lubridate)
 library(ggbeeswarm)
-theme_set(theme_bw())
+library(scales)
+theme_set(theme_gray())
 ```
 
-```{r read}
+#### Antes de realizar qualquer análise preprocessei os dados com a finalidade selecionar do conjunto de dados somente as tuplas cujas semanas onde haviam leitura de temperatura nas duas cidades, entre os anos de 2010 a 2018.
+
+```{r Preprocessing}
 climas = read_csv(here::here("data/clima_cg_jp-semanal.csv"), 
                   col_types = "cTdddddd")
+semanas_ambas_ocorrencias = climas %>% count(semana) %>% filter(n == 2) %>% pull(semana)
 
 # Selecionando somente as semanas onde há leitura nas duas cidades
-semanas = climas %>% count(semana) %>% filter(n == 2) %>% pull(semana)
-preprocessed_climas = climas %>% filter(semana %in% semanas)
+preprocessed_climas = climas %>% filter(semana %in% semanas_ambas_ocorrencias) %>% filter(ano >= 2010, ano < 2019)
 
-preprocessed_climas  %>% group_by(cidade, ano) %>% mutate(media_anual = mean(tmedia))
+# preprocessed_climas %>%  group_by(cidade) %>% count(ano,mes) %>% summary()
 ```
+
+### Onde é mais quente?
+
+```{r Campina Grande}
+medias_anuais_cg = preprocessed_climas %>% filter(cidade == 'Campina Grande') %>% group_by(ano) %>% summarise(media = mean(tmedia), min = mean(tmin), max = mean(tmax))
+
+medias_anuais_cg %>% gather("Type", "Value",-ano) %>% ggplot(mapping = aes(ano, Value, fill = Type)) + scale_y_continuous(limits =c(15, 31), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C", fill = "Métricas") + ggtitle("          Média das temperaturas mínimas, médias e máximas de \n                         2010 a 2018 em Campina Grande")
+```
+
+```{r João Pessoa}
+medias_anuais_jp = preprocessed_climas %>% filter(cidade == 'João Pessoa') %>% group_by(ano) %>% summarise(media = mean(tmedia), min = mean(tmin), max = mean(tmax))
+
+medias_anuais_jp %>% gather("Métrica", "Value",-ano) %>% ggplot(mapping = aes(ano, Value, fill = Métrica)) + scale_y_continuous(limits =c(15, 33), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C") + ggtitle("          Média das temperaturas mínimas, médias e máximas de \n                           2010 a 2018 em João Pessoa")
+```
+
 ## Temperatura
 
 ### Onde é mais quente?
