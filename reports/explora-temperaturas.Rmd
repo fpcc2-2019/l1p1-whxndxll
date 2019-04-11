@@ -15,8 +15,8 @@ library(ggbeeswarm)
 library(scales)
 theme_set(theme_gray())
 ```
-
-#### Antes de realizar qualquer análise preprocessei os dados com a finalidade selecionar do conjunto de dados somente as tuplas cujas semanas onde haviam leitura de temperatura nas duas cidades, entre os anos de 2010 a 2018.
+#
+#### Antes de realizar qualquer análise preprocessei os dados com a finalidade selecionar do conjunto de dados somente as tuplas onde havia leitura de temperatura nas duas cidades para uma mesma semana.
 
 ```{r Preprocessing}
 climas = read_csv(here::here("data/clima_cg_jp-semanal.csv"), 
@@ -26,23 +26,164 @@ semanas_ambas_ocorrencias = climas %>% count(semana) %>% filter(n == 2) %>% pull
 # Selecionando somente as semanas onde há leitura nas duas cidades
 preprocessed_climas = climas %>% filter(semana %in% semanas_ambas_ocorrencias) %>% filter(ano >= 2010, ano < 2019)
 
+preprocessed_climas_todos_anos = climas %>% filter(semana %in% semanas_ambas_ocorrencias)
+
 # preprocessed_climas %>%  group_by(cidade) %>% count(ano,mes) %>% summary()
 ```
 
-### Onde é mais quente?
 
-```{r Campina Grande}
-medias_anuais_cg = preprocessed_climas %>% filter(cidade == 'Campina Grande') %>% group_by(ano) %>% summarise(media = mean(tmedia), min = mean(tmin), max = mean(tmax))
+## TEMPERATURA:
+#
+### ONDE É MAIS QUENTE?
+#
+#### Para responder a essa pergunta selecionei os anos entre 2010 e 2018.
+#
+#### Os gráficos abaixo apresentam os valores médios das temperaturas médias, mínimas e máximas ao longo dos anos nas cidades de Campina Grande e João Pessoa. As linhas pontilhadas representam a média de todos os anos para cada uma das cidades.
 
-medias_anuais_cg %>% gather("Type", "Value",-ano) %>% ggplot(mapping = aes(ano, Value, fill = Type)) + scale_y_continuous(limits =c(15, 31), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C", fill = "Métricas") + ggtitle("          Média das temperaturas mínimas, médias e máximas de \n                         2010 a 2018 em Campina Grande")
+```{r Médias}
+
+medias_anuais_cg = preprocessed_climas %>% filter(cidade == "Campina Grande") %>% group_by(ano) %>% summarise(media_cg = mean(tmedia))
+
+medias_anuais_jp = preprocessed_climas %>% filter(cidade == "João Pessoa") %>% group_by(ano) %>% summarise(media_jp = mean(tmedia)) %>% select(media_jp)
+
+medias_anuais = bind_cols(medias_anuais_cg,medias_anuais_jp)
+
+media_cg_anos = mean(medias_anuais$media_cg)
+media_jp_anos = mean(medias_anuais$media_jp)
+    
+medias_anuais = medias_anuais %>% gather("Type", "Value",-ano)
+
+medias_anuais$Type[medias_anuais$Type == "media_cg"] <- "Campina Grande" 
+medias_anuais$Type[medias_anuais$Type == "media_jp"] <- "João Pessoa" 
+
+medias_anuais %>% ggplot(mapping = aes(ano, Value, fill = Type)) + scale_y_continuous(limits =c(15, 30), breaks =  seq(15,30,1.5), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C", fill = "Cidade") + geom_hline(aes(yintercept = media_cg_anos), colour="#990000", linetype="dashed") + geom_hline(aes(yintercept = media_jp_anos), colour="#0072B2", linetype="dashed") + ggtitle("  Média anual das temperaturas médias de 2010 a 2018")
 ```
 
-```{r João Pessoa}
-medias_anuais_jp = preprocessed_climas %>% filter(cidade == 'João Pessoa') %>% group_by(ano) %>% summarise(media = mean(tmedia), min = mean(tmin), max = mean(tmax))
+```{r Mínima}
+min_anuais_cg = preprocessed_climas %>% filter(cidade == "Campina Grande") %>% group_by(ano) %>% summarise(min_cg = mean(tmin))
 
-medias_anuais_jp %>% gather("Métrica", "Value",-ano) %>% ggplot(mapping = aes(ano, Value, fill = Métrica)) + scale_y_continuous(limits =c(15, 33), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C") + ggtitle("          Média das temperaturas mínimas, médias e máximas de \n                           2010 a 2018 em João Pessoa")
+min_anuais_jp = preprocessed_climas %>% filter(cidade == "João Pessoa") %>% group_by(ano) %>% summarise(min_jp = mean(tmin)) %>% select(min_jp)
+
+min_anuais = bind_cols(min_anuais_cg,min_anuais_jp)
+
+min_cg_anos = mean(min_anuais$min_cg)
+min_jp_anos = mean(min_anuais$min_jp)
+
+min_anuais = min_anuais %>% gather("Type", "Value",-ano)
+
+min_anuais$Type[min_anuais$Type == "min_cg"] <- "Campina Grande" 
+min_anuais$Type[min_anuais$Type == "min_jp"] <- "João Pessoa" 
+
+min_anuais %>% ggplot(mapping = aes(ano, Value, fill = Type)) + scale_y_continuous(limits =c(10, 25), breaks =  seq(10,25,1.5), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C", fill = "Cidade") + geom_hline(aes(yintercept = min_cg_anos), colour="#990000", linetype="dashed") + geom_hline(aes(yintercept = min_jp_anos), colour="#0072B2", linetype="dashed") + ggtitle(" Média anual das temperaturas mínimas de 2010 a 2018")
+
+```
+```{r Máxima}
+max_anuais_cg = preprocessed_climas %>% filter(cidade == "Campina Grande") %>% group_by(ano) %>% summarise(max_cg = mean(tmax))
+
+max_anuais_jp = preprocessed_climas %>% filter(cidade == "João Pessoa") %>% group_by(ano) %>% summarise(max_jp = mean(tmax)) %>% select(max_jp)
+
+max_anuais = bind_cols(max_anuais_cg,max_anuais_jp)
+
+max_cg_anos = mean(max_anuais$max_cg)
+max_jp_anos = mean(max_anuais$max_jp)
+
+
+max_anuais = max_anuais %>% gather("Type", "Value",-ano)
+
+max_anuais$Type[max_anuais$Type == "max_cg"] <- "Campina Grande" 
+max_anuais$Type[max_anuais$Type == "max_jp"] <- "João Pessoa" 
+
+max_anuais %>% ggplot(mapping = aes(ano, Value, fill = Type)) + scale_y_continuous(limits =c(20, 35), breaks =  seq(20,35,1.5), oob = rescale_none) + geom_col(position = "dodge") + scale_x_discrete(limits = c(2010:2018)) + labs(x = "Anos", y="Temperatura em C", fill = "Cidade") + geom_hline(aes(yintercept = max_cg_anos), colour="#990000", linetype="dashed") + geom_hline(aes(yintercept = max_jp_anos), colour="#0072B2", linetype="dashed") + ggtitle(" Média anual das temperaturas máximas de 2010 a 2018")
 ```
 
+#
+#### A partir dos gráficos, podemos observar que as temperaturas em João Pessoa são superiores às de Campina Grande, seja ela mínima, média ou máxima. Essa diferença é mais acentuada nas temperaturas mínimas e médias, indicando que os "picos de calor" em ambas as cidades são bem próximos. 
+
+### QUAL FOI O SÃO JOÃO MAIS FRIO DE CAMPINA GRANDE ENTRE 1995 E 2018?
+# 
+#### Como o objetivo desta análise leva em consideração somente os dados sobre Campina Grande, eu usei o conjunto de dados sem a etapa de preprocessamento da análise anterior. Os gráficos abaixo mostram, respectivamente, as médias semanais para o mês de junho entre os anos de 1995 e 2015, tendo em vista que só os dados sobre junho destes anos estavam disponível.
+#
+#### O ponto em vermelho indica o ano com a menor temperatura média
+#
+```{r São João Média}
+
+climas %>% filter(cidade == "Campina Grande", mes == 6) %>% select(cidade, tmedia, tmin, tmax, mes, ano) %>% group_by(mes, ano) %>% summarise(media=mean(tmedia), min = mean(tmin), max = mean(tmax)) %>% ggplot(mapping = aes(x=ano, y=media)) + scale_y_continuous(limits =c(22, 24), breaks =  seq(22,24,0.3), oob = rescale_none) + scale_x_discrete(limits = c(1995:2018)) + geom_line(colour="#0072B2", size=0.25, linetype = "dotted") + geom_point(colour="#0072B2",size=2) + geom_point(aes(x=2004,y=min(media)), colour="#990000",size=5)+ theme(axis.text.x = element_text(angle = 60)) + labs(x = "Anos", y = "Temperatura em C",title = " Média das temperaturas médias no mês de Junhos de 1995 a 2018")
+```
+
+```{r São João Mínima}
+climas %>% filter(cidade == "Campina Grande", mes == 6) %>% select(cidade, tmedia, tmin, tmax, mes, ano) %>% group_by(mes, ano) %>% summarise(media=mean(tmedia), min = mean(tmin), max = mean(tmax)) %>% ggplot(mapping = aes(x=ano, y=min)) + scale_y_continuous(limits =c(17, 19), breaks =  seq(17,19,0.3), oob = rescale_none) + scale_x_discrete(limits = c(1995:2019)) + geom_line(colour="#0072B2", size=0.25, linetype = "dotted") + geom_point(colour="#0072B2",size=2) + geom_point(aes(x=2008,y=min(min)), colour="#990000",size = 5) + theme(axis.text.x = element_text(angle = 60)) + labs(x = "Anos", y = "Temperatura em C",title = " Média das temperaturas mínimas no mês de Junho de 1995 a 2018")
+
+```
+
+#
+#### Quando levamos em consideração as **temperaturas médias** podemos concluir que o São João mais frio de Campina Grande foi o de **2004**, entretanto o gráfico das **temperaturas mínimas** mostra que o ano que teve a menor média mensal foi **2008**. Se houvessem dados sobre os horários das leituras poderíamos **investigar qual ano teve as noites mais frias durante o mês de junho**, entretanto ao comparar a informação de ambos os gráficos podemos supor que foi **2008**.
+#
+## CHUVA:
+#
+#### Para analisar a chuva, vou me limitar ao ano de 2018. A escolha desse ano foi motivada pela matéria: https://g1.globo.com/pb/paraiba/noticia/2019/01/09/paraiba-teve-maior-volume-de-chuvas-dos-ultimos-5-anos-em-2018-diz-aesa.ghtml. A decisão de limitar ao ano de 2018 é para tornar mais fácil a interpretação dos dados no que se refere à distribuição dos dados.
+#
+### COMO É A DISTRIBUIÇÃO DO VOLUME DE CHUVAS POR SEMANA EM JOÃO PESSOA E CAMPINA GRANDE?
+#
+#### Os gráficos abaixo mostram a distribuição do volume de chuva em CG e JP. A partir dos gráficos que a distribuição de chuvas em Campina Grande apresenta menor dispersão, pois os valores estão mais próximos da mediana, além disso a cauda da distribuição de Campina Grande também é menor. Enquanto a distribuição de João Pessoa é mais dispersa, a cabeça é num ponto de menor densidade e a cauda é mais longa
+#
+```{r Chuva CG e JP}
+
+
+#chuvas_cg = preprocessed_climas %>% filter(cidade == "Campina Grande", ano == 2018) %>% select(semana, chuva) %>% rename(chuva_cg = chuva)
+
+#chuvas_jp = preprocessed_climas %>% filter(cidade == "João Pessoa", ano == 2018) %>% select(semana, chuva) %>% rename(chuva_jp = chuva) %>% select(chuva_jp) 
+
+#chuvas = bind_cols(chuvas_cg, chuvas_jp)
+
+#mediana_cg = median(chuvas$chuva_cg)
+#mediana_jp = median(chuvas$chuva_jp)
+library(plyr)
+mu <- ddply(filter(preprocessed_climas,ano==2018), "cidade", summarise, grp.median=median(chuva))
+#head(mu)
+
+# chuvas %>% gather("Type", "Value",-semana) %>% ggplot(aes(x=chuva, color=Type, fill=Type)) + geom_density() # + geom_vline(aes(xintercept=grp.mean, color=sex), linetype="dashed")
+
+
+preprocessed_climas %>% filter(ano == 2018) %>% select(cidade, chuva) %>% ggplot(aes(x=chuva, color=cidade)) + geom_density() + geom_vline(data=mu, aes(xintercept=grp.median, color=cidade),
+             linetype="dashed")
+```
+```{r BoxPlot}
+
+preprocessed_climas %>% filter(ano == 2018) %>% select(cidade, chuva) %>% ggplot(aes(x=cidade, y=chuva)) + geom_boxplot()
+```
+
+#
+### A DISTRIBUIÇÃO É DIFERENTE EM MESES ESPECÍFICOS?
+#
+#### Para realizar essa análise selecionei os meses de Fevereiro, Junho e Outubro para o mesmo ano de 2018 na cidade de João Pessoa.
+#
+#### Análise incompleta...
+```{r Chuva Meses}
+
+
+#chuvas_cg = preprocessed_climas %>% filter(cidade == "Campina Grande", ano == 2018) %>% select(semana, chuva) %>% rename(chuva_cg = chuva)
+
+#chuvas_jp = preprocessed_climas %>% filter(cidade == "João Pessoa", ano == 2018) %>% select(semana, chuva) %>% rename(chuva_jp = chuva) %>% select(chuva_jp) 
+
+#chuvas = bind_cols(chuvas_cg, chuvas_jp)
+
+#mediana_cg = median(chuvas$chuva_cg)
+#mediana_jp = median(chuvas$chuva_jp)
+
+# chuvas %>% gather("Type", "Value",-semana) %>% ggplot(aes(x=chuva, color=Type, fill=Type)) + geom_density() # + geom_vline(aes(xintercept=grp.mean, color=sex), linetype="dashed")
+
+
+mu2 <- ddply(filter(preprocessed_climas,ano==2018, mes %in% c(2,6,10),cidade == "João Pessoa"), "mes", summarise, grp.median=median(chuva))
+
+preprocessed_climas_meses = filter(preprocessed_climas, ano == 2018, mes %in% c(2,6,10),cidade == "João Pessoa") %>% select(mes, chuva)
+
+
+
+preprocessed_climas_meses$mes = as.character(preprocessed_climas_meses$mes)
+
+# preprocessed_climas_meses %>% ggplot(aes(x=chuva, color=mes)) + geom_density() + geom_vline(data=mu2, aes(xintercept=grp.median, color=mes), linetype="dashed")
+```
+<!--
 ## Temperatura
 
 ### Onde é mais quente?
@@ -66,5 +207,5 @@ Como é a distribuição do volume de chuvas por semana em JP e CG? A chuva vari
 
 ### No geral, onde chove mais?
 
-### A distribuição é diferente em meses específicos? 
-
+### A distribuição é diferente em meses específicos?
+-->
